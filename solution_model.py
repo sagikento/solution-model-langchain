@@ -22,7 +22,7 @@ class Solution(BaseModel):
     cost_estimate: List[str] = Field(description="解決にかかる費用の相場")
 
 # 2. LLMとパーサーを初期化
-llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0)
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
 parser = JsonOutputParser(pydantic_object=Solution)
 
 # 3. プロンプトテンプレートを作成
