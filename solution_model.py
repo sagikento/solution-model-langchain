@@ -4,9 +4,7 @@ from dotenv import load_dotenv
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.pydantic_v1 import BaseModel, Field
-from typing import List
+from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 
 # .envファイルから環境変数を読み込む
 load_dotenv()
@@ -15,15 +13,25 @@ load_dotenv()
 if "GOOGLE_API_KEY" not in os.environ:
     raise ValueError("GOOGLE_API_KEYが設定されていません。.envファイルを確認してください。")
 
-# 1. 出力の型を定義
-class Solution(BaseModel):
-    solution_proposals: List[str] = Field(description="考えられる解決策の提案")
-    similar_cases: List[str] = Field(description="過去の類似ケースや事例")
-    cost_estimate: List[str] = Field(description="解決にかかる費用の相場")
+# 1. 出力形式のスキーマを定義
+response_schemas = [
+    ResponseSchema(
+        name="solution_proposals",
+        description="考えられる解決策の提案をリスト形式で返します。"
+    ),
+    ResponseSchema(
+        name="similar_cases",
+        description="過去の類似ケースや事例をリスト形式で返します。"
+    ),
+    ResponseSchema(
+        name="cost_estimate",
+        description="解決にかかる費用の相場をリスト形式で返します。"
+    ),
+]
 
 # 2. LLMとパーサーを初期化
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
-parser = JsonOutputParser(pydantic_object=Solution)
+parser = StructuredOutputParser.from_response_schemas(response_schemas)
 
 # 3. プロンプトテンプレートを作成
 prompt = PromptTemplate(
@@ -53,7 +61,7 @@ def get_solution(title: str, detail: str):
     """
     try:
         response = chain.invoke({"title": title, "detail": detail})
-        # JSON形式で整形して出力
+        # Pythonの辞書をJSON文字列に変換して出力
         return json.dumps(response, indent=2, ensure_ascii=False)
     except Exception as e:
         return f"エラーが発生しました: {e}"
